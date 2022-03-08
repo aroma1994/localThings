@@ -1,0 +1,11 @@
+all:
+  vars:
+    f: "{{ playbook_dir }}/f"
+    git_dir: "{{ playbook_dir }}/git"
+    ansible_user: u
+    ansible_connection: local
+    ansible_python_interpreter: "/usr/bin/python3"
+  hosts:
+    localhost:
+      vars:
+        ansible_connection: local

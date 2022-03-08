@@ -1,0 +1,129 @@
+- name: local_things
+  hosts: all
+  any_errors_fatal: true
+  tasks:
+
+    - name: update apt
+      tags: update_apt
+      local_action:
+        module: apt
+        update_cache: true
+      become: true
+
+    - name: upgrade apt
+      tags: upgrade_apt
+      local_action:
+        module: apt
+        upgrade: true
+      become: true
+
+    - name: install blender
+      tags: install_blender
+      block:
+        - local_action:
+            module: apt
+            name:
+              - blender
+            state: present
+          become: true
+
+    - name: install kalitorify
+      tags: install_kalitorify
+      block:
+        - local_action:
+            module: apt
+            name:
+              - tor
+            state: present
+          become: true
+
+        - local_action:
+            module: git
+            repo: https://github.com/brainfucksec/kalitorify.git
+            dest: "{{ git_dir }}/kalitorify"
+
+        - local_action:
+            module: make
+            chdir: "{{ git_dir }}/kalitorify"
+          become: true
+
+        - local_action:
+            module: make
+            chdir: "{{ git_dir }}/kalitorify"
+            target: install
+          become: true
+
+    - name: install snx
+      tags: install_snx
+      block:
+
+        - local_action:
+            module: shell
+            cmd: dpkg --add-architecture i386
+          become: true
+
+        - local_action:
+            module: apt
+            update_cache: true
+            upgrade: true
+          become: true
+
+        - local_action:
+            module: apt
+            name:
+              - libx11-6:i386
+              - libpam0g:i386
+              - libstdc++5:i386
+            state: present
+          become: true
+
+    - name: install tcpflow
+      tags: install_tcpflow
+      block:
+
+        - local_action:
+            module: apt
+            name:
+              - tcpflow
+          become: true    
+
+    - name: install netbox 
+      tags: install_netbox
+      block:
+
+        - local_action:
+            module: apt
+            name: "{{ item }}"
+            state: present
+          become: true
+          with_items:
+            - postgresql
+            - libpq-dev
+        - local_action:
+            module: systemd
+            state: started
+            name: postgresql
+        - local_action:
+            module: community.postgresql.postgresql_db
+            name: netbox
+            encoding: UTF-8
+            lc_collate: ru_RU.UTF-8
+            lc_ctype: ru_RU.UTF-8
+          become: true
+          become_user: postgres
+        - local_action:
+            module: community.postgresql.postgresql_user
+            db: netbox
+            name: netbox
+            password: celestia
+          become: true
+          become_user: postgres
+        - local_action:
+            module: community.postgresql.postgresql_privs
+            db: netbox
+            privs: ALL
+            type: database
+            obj: netbox
+            role: netbox
+          become: true
+          become_user: postgres
